@@ -9,7 +9,8 @@
    done, with regards to configuring registry policy, is not lost. ConvertTo-DSC is a cmdlet 
    (advanced function) that was created to address this sceanario. The ConvertTo-DSC cmdlet
    requires the GroupPolicy PowerShell Module. The GP cmdlets are avaialbe on machines where 
-   the GPMC is installed. 
+   the GPMC is installed. The <gponame>.ps1 file will be opened in the PowerShell ISE as a
+   convenience.
 .EXAMPLE
    ConvertTo-DSC -GPOName <gpo> -OutputFolder <folder where to create DSC .ps1 file>
 .EXAMPLE
@@ -23,7 +24,11 @@ function ConvertTo-DSC
     [CmdletBinding()]
     [Alias("GP2DSC")]
     [OutputType([int])]
-    
+    # possible new scenarios... optional open in ISE when complete. 
+    # optional create of .mof file, including target test machine. This scenario would 
+    # be an e2e test where the GPO is selected, Registry data is converted to .ps1 config
+    # the configuration is called and .mof is created and DSC configuration is started targeting
+    # a test machine.
     Param
     # possibly re-work parameter names.
         ([Parameter(Mandatory=$true)]
@@ -123,7 +128,7 @@ function ConvertTo-DSC
             '}' | out-file -FilePath $outputFile -Append
             $gpo | out-file -FilePath $outputFile -Append
         }
-
         ADMToDSC -gpo $gpoName -path $outputFolder
+        ISE "$outputfolder\$gponame.ps1"
     }
 }
