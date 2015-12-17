@@ -6,20 +6,26 @@
    Group Policy Objects have been created, managed, configured, re-configured, deleted,
    backed up, imported, exported, inspected, detected, neglected and rejected for many years. 
    Now with the advent of Desired State Configuration (DSC) ensuring that the work previously 
-   done with regards to configuring registry policy, is not lost. ConvertTo-DSC is a cmdlet 
-   (advanced function) that was created to address this sceanario. 
+   done, with regards to configuring registry policy, is not lost. ConvertTo-DSC is a cmdlet 
+   (advanced function) that was created to address this sceanario. The ConvertTo-DSC cmdlet
+   requires the GroupPolicy PowerShell Module. The GP cmdlets are avaialbe on machines where 
+   the GPMC is installed. 
 .EXAMPLE
    ConvertTo-DSC -GPOName <gpo> -OutputFolder <folder where to create DSC .ps1 file>
+.EXAMPLE
+   GP2DSC -GPOName <GPO> -OutputFolder <folder>
 .LINK
     Http://www.github.com/gpoguy
 #>
 function ConvertTo-DSC
 {
+    # add additional cmdletBinding information to make the experience more robust.
     [CmdletBinding()]
-    [Alias()]
+    [Alias("GP2DSC")]
     [OutputType([int])]
     
     Param
+    # possibly re-work parameter names.
         ([Parameter(Mandatory=$true)]
         [string]$gpoName,
         [Parameter(Mandatory=$true)]
@@ -28,7 +34,6 @@ function ConvertTo-DSC
 
     Process
     {
-    
         function ADMtoDSC
         {
             param
@@ -45,18 +50,23 @@ function ConvertTo-DSC
             # ADD SOME OUTPUT IF THERE IS NO SETTINGS IN THIS REGISTRY HIVE CONTINUE SILENTLY AND
             # MENTION IN VERBOSE OUTPUT "No settings in "HKLM\Software\Microsoft\Winodws NT\CurrentVersion"
 
-            #build the DSC configuration doc
+            # build the DSC configuration doc
             GenConfigDoc -path $path -gpo $gpo -policies $policies
+            # add error/debug and verbose.
         }
 
-        # This function 
         function Recurse_PolicyKeys
+        # This function goes through the registry.pol data and finds entries associated with the 
+        # two policy hives mentioned above. Consider rename of the function to be more modular and 
+        # powershell'ish
         {
             param
             (
                 [string]$key,
                 [string]$gpoName
             )
+            
+            # Get-GPRegistryValue is from the GroupPolicy PowerShell module.
             $current = Get-GPRegistryValue -Name $gpo -Key $key
             foreach ($item in $current)
             {
@@ -70,9 +80,12 @@ function ConvertTo-DSC
                 }
             }
             return $returnVal
+            # hmmmmm
         }
 
         function GenConfigDoc
+        # consider rename of function - New-DSCDoc
+        # add verbose output, error handling and debugging
         {
             param
             (
@@ -93,8 +106,10 @@ function ConvertTo-DSC
                 {
                      continue
                 }
-
-                #now build the resources
+                # now build the resources
+                # exploring other ways to create the resource info.
+                # figure out if certain encoding is needed for the output. ISE shows spaces as
+                # unicode character.
                 "    Registry `"" + $regItem.ValueName + "`""| out-file -FilePath $outputFile -Append
                 '    {' | out-file -FilePath $outputFile -Append
                 "      Ensure = `"Present`"" | out-file -FilePath $outputFile -Append
